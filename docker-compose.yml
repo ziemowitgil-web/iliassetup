@@ -5,26 +5,26 @@ services:
     image: docker.io/traefik:v3.0
     container_name: traefik
     restart: unless-stopped
-    command: >
-      --providers.docker=true 
-      --providers.docker.exposedbydefault=false
-      --entrypoints.web.address=:8080 
-      --entrypoints.websecure.address=:8443
-      --entrypoints.ipaccess.address=:8081 
-      --entrypoints.metrics.address=:9102
-      --certificatesresolvers.letsencrypt.acme.email=admin@example.com
-      --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
-      --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
-      --metrics.prometheus=true
-      --api.dashboard=true
+    command:
+      - --entrypoints.web.address=:8080
+      - --entrypoints.websecure.address=:8443
+      - --entrypoints.ipaccess.address=:8081
+      - --entrypoints.metrics.address=:9102
+      - --api.dashboard=true
+      - --metrics.prometheus=true
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
+      - --certificatesresolvers.letsencrypt.acme.email=admin@example.com
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
     ports:
-      - "8080:8080"
-      - "8443:8443"
-      - "8081:8081"
-      - "9102:9102"
+      - "8080:8080"     # Traefik dashboard
+      - "8443:8443"     # HTTPS
+      - "8081:8081"     # ILIAS alternative port
+      - "9102:9102"     # Metrics
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./letsencrypt:/letsencrypt
+      - ./traefik/dynamic:/etc/traefik/dynamic:Z
 
   ilias-db:
     image: docker.io/library/mariadb:10.11
@@ -36,7 +36,7 @@ services:
       MYSQL_USER: ilias
       MYSQL_PASSWORD: ilias123
     volumes:
-      - ilias-db-data:/var/lib/mysql
+      - ilias-db-data:/var/lib/mysql:Z
 
   ilias:
     image: docker.io/library/php:8.2-apache
@@ -49,14 +49,8 @@ services:
       DB_NAME: ilias
     depends_on:
       - ilias-db
-    ports:
-      - "8081:80"
     volumes:
       - ./ilias-code:/var/www/html:Z
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.ilias.rule=Host(`pe.edukacja.cloud`)"
-      - "traefik.http.routers.ilias.entrypoints=websecure,ipaccess"
 
   prometheus:
     image: docker.io/prom/prometheus:latest

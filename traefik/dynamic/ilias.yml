@@ -1,0 +1,14 @@
+http:
+  routers:
+    ilias:
+      rule: "Host(`pe.edukacja.cloud`)"
+      entryPoints:
+        - websecure
+        - ipaccess
+      service: ilias
+
+  services:
+    ilias:
+      loadBalancer:
+        servers:
+          - url: "http://ilias:80"
