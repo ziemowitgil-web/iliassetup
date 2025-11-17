@@ -18,10 +18,10 @@ services:
       --metrics.prometheus=true
       --api.dashboard=true
     ports:
-      - "8080:8080"
-      - "8443:8443"
-      - "8081:8081"
-      - "9102:9102"
+      - "8080:8080"    # HTTP Traefik
+      - "8443:8443"    # HTTPS Traefik
+      - "8081:8081"    # IP access ILIAS
+      - "9102:9102"    # Prometheus metrics
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./letsencrypt:/letsencrypt
@@ -49,6 +49,8 @@ services:
       DB_NAME: ilias
     depends_on:
       - ilias-db
+    ports:
+      - "8081:80"     # rootless-friendly mapping port host → kontener
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.ilias.rule=Host(`pe.edukacja.cloud`)"
