@@ -8,26 +8,21 @@ entryPoints:
   metrics:
     address: ":9102"
 
-api:
-  dashboard: true
-  insecure: false
-
 providers:
   docker:
-    endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
 
 certificatesResolvers:
   letsencrypt:
     acme:
+      email: "admin@example.com"  # <-- zmień na swój e-mail
+      storage: "/letsencrypt/acme.json"
       httpChallenge:
         entryPoint: web
-      email: "admin@example.com"
-      storage: "/letsencrypt/acme.json"
 
 metrics:
   prometheus:
     entryPoint: metrics
-    addEntryPointsLabels: true
-    addRoutersLabels: true
-    addServicesLabels: true
+
+api:
+  dashboard: true
