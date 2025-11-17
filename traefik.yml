@@ -1,14 +1,17 @@
+# traefik.yml
 entryPoints:
   web:
     address: ":80"
   websecure:
     address: ":443"
+  ipaccess:
+    address: ":8080"
   metrics:
     address: ":9102"
 
 api:
   dashboard: true
-  insecure: false
+  insecure: false  # dla bezpieczeństwa w produkcji warto włączyć auth
 
 providers:
   docker:
@@ -20,7 +23,7 @@ certificatesResolvers:
     acme:
       httpChallenge:
         entryPoint: web
-      email: "admin@example.com"
+      email: "admin@feer.org.pl"  # <- zmień na swój email
       storage: "/letsencrypt/acme.json"
 
 metrics:

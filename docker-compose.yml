@@ -1,134 +1,33 @@
-version: "3.9"
-
-networks:
+entryPoints:
   web:
-  monitoring:
+    address: ":80"
+  websecure:
+    address: ":443"
+  ipaccess:
+    address: ":8080"
+  metrics:
+    address: ":9102"
 
-services:
-  traefik:
-    image: traefik:v3.0
-    container_name: traefik
-    networks:
-      - web
-      - monitoring
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./letsencrypt:/letsencrypt
-      - ./traefik.yml:/etc/traefik/traefik.yml:ro
-    ports:
-      - "80:80"
-      - "443:443"
-      - "9102:9102"
-    restart: always
-    command:
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
+api:
+  dashboard: true
+  insecure: false
 
-  db:
-    image: mariadb:10.6
-    container_name: ilias_db
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: ilias
-      MYSQL_USER: ilias
-      MYSQL_PASSWORD: iliaspassword
-    volumes:
-      - data/db_data:/var/lib/mysql
-    networks:
-      - web
-    restart: always
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
 
-  ilias:
-    image: alescdb/ilias:latest
-    container_name: ilias_app
-    depends_on:
-      - db
-    environment:
-      ILIAS_DB_HOST: db
-      ILIAS_DB_USER: ilias
-      ILIAS_DB_PASSWORD: iliaspassword
-      ILIAS_DB_NAME: ilias
-      ILIAS_ROOT_PASSWORD: admin
-    volumes:
-      - data/ilias_data:/var/www/html/data
-      - data/ilias_files:/var/www/html/iliasdata
-    networks:
-      - web
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.ilias-http.rule=Host(`pe.edukacja.cloud`)"
-      - "traefik.http.routers.ilias-http.entrypoints=web"
-      - "traefik.http.routers.ilias-http.middlewares=redirect-https"
-      - "traefik.http.middlewares.redirect-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.ilias-https.rule=Host(`pe.edukacja.cloud`)"
-      - "traefik.http.routers.ilias-https.entrypoints=websecure"
-      - "traefik.http.routers.ilias-https.tls=true"
-      - "traefik.http.routers.ilias-https.tls.certresolver=letsencrypt"
-      - "traefik.http.services.ilias.loadbalancer.server.port=80"
-    restart: always
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      httpChallenge:
+        entryPoint: web
+      email: "admin@example.com"
+      storage: "/letsencrypt/acme.json"
 
+metrics:
   prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    networks:
-      - monitoring
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    ports:
-      - "9090:9090"
-    restart: always
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    networks:
-      - monitoring
-    environment:
-      - GF_SECURITY_ALLOW_EMBEDDING=true
-    volumes:
-      - grafana_data:/var/lib/grafana
-    ports:
-      - "3000:3000"
-    depends_on:
-      - prometheus
-    restart: always
-
-  cadvisor:
-    image: gcr.io/google-containers/cadvisor:latest
-    container_name: cadvisor
-    networks:
-      - monitoring
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-    ports:
-      - "8080:8080"
-    restart: always
-
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: node_exporter
-    networks:
-      - monitoring
-    pid: "host"
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    command:
-      - '--path.procfs=/host/proc'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($|/)'
-    ports:
-      - "9100:9100"
-    restart: always
-
-volumes:
-  data/db_data:
-  data/ilias_data:
-  data/ilias_files:
-  prometheus_data:
-  grafana_data:
+    entryPoint: metrics
+    addEntryPointsLabels: true
+    addRoutersLabels: true
+    addServicesLabels: true
