@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   traefik:
-    image: traefik:v3.0
+    image: docker.io/traefik:v3.0
     container_name: traefik
     restart: unless-stopped
     command: >
@@ -18,16 +18,16 @@ services:
       --metrics.prometheus=true
       --api.dashboard=true
     ports:
-      - "8080:8080"    # HTTP
-      - "8443:8443"    # HTTPS
-      - "8081:8081"    # ILIAS access po IP
-      - "9102:9102"    # Prometheus metrics
+      - "8080:8080"
+      - "8443:8443"
+      - "8081:8081"
+      - "9102:9102"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./letsencrypt:/letsencrypt
 
   ilias-db:
-    image: mariadb:10.11
+    image: docker.io/library/mariadb:10.11
     container_name: ilias-db
     restart: unless-stopped
     environment:
@@ -39,7 +39,7 @@ services:
       - ilias-db-data:/var/lib/mysql
 
   ilias:
-    image: ghcr.io/ziemowitgil/ilias:latest
+    image: docker.io/library/php:8.2-apache
     container_name: ilias
     restart: unless-stopped
     environment:
@@ -53,10 +53,9 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.ilias.rule=Host(`pe.edukacja.cloud`)"
       - "traefik.http.routers.ilias.entrypoints=websecure,ipaccess"
-      - "traefik.http.routers.ilias.tls.certresolver=letsencrypt"
 
   prometheus:
-    image: prom/prometheus:latest
+    image: docker.io/prom/prometheus:latest
     container_name: prometheus
     restart: unless-stopped
     volumes:
@@ -65,7 +64,7 @@ services:
       - "9090:9090"
 
   grafana:
-    image: grafana/grafana:latest
+    image: docker.io/grafana/grafana:latest
     container_name: grafana
     restart: unless-stopped
     environment:
